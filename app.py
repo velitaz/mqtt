@@ -4,74 +4,80 @@ import streamlit as st
 import json
 import platform
 
-# Muestra la versión de Python junto con detalles adicionales
-st.write("Versión de Python:", platform.python_version())
+# Configuración inicial de la página
+st.set_page_config(page_title="Control MQTT", page_icon="🔌", layout="centered")
 
+# Encabezado principal
+st.title("🔌 Panel de Control MQTT")
+st.caption("Control y monitoreo de dispositivos usando protocolo MQTT")
+
+# Información del sistema
+with st.expander("🖥️ Información del sistema"):
+    st.write("Versión de Python:", platform.python_version())
+
+# Variables globales
 values = 0.0
-act1="OFF"
+act1 = "OFF"
 
-def on_publish(client,userdata,result):             #create function for callback
-    print("el dato ha sido publicado \n")
+# Función cuando se publica un mensaje
+def on_publish(client, userdata, result):
+    print("El dato ha sido publicado\n")
     pass
 
+# Función cuando se recibe un mensaje
 def on_message(client, userdata, message):
     global message_received
     time.sleep(2)
-    message_received=str(message.payload.decode("utf-8"))
-    st.write(message_received)
+    message_received = str(message.payload.decode("utf-8"))
+    st.success(f"Mensaje recibido: {message_received}")
 
-        
-
-
-broker="157.230.214.127"
-port=1883
-client1= paho.Client("GIT-HUB")
+# Configuración del cliente MQTT
+broker = "157.230.214.127"
+port = 1883
+client1 = paho.Client("GIT-HUB")
 client1.on_message = on_message
 
+# Sección de control digital
+st.subheader("⚙️ Control de Encendido/Apagado")
 
+col1, col2 = st.columns(2)
 
-st.title("MQTT Control")
+with col1:
+    if st.button('🟢 Encender (ON)'):
+        act1 = "ON"
+        client1 = paho.Client("GIT-HUB")
+        client1.on_publish = on_publish
+        client1.connect(broker, port)
+        message = json.dumps({"Act1": act1})
+        client1.publish("cmqtt_s", message)
+        st.success("Dispositivo encendido.")
 
-if st.button('ON'):
-    act1="ON"
-    client1= paho.Client("GIT-HUB")                           
-    client1.on_publish = on_publish                          
-    client1.connect(broker,port)  
-    message =json.dumps({"Act1":act1})
-    ret= client1.publish("cmqtt_s", message)
- 
-    #client1.subscribe("Sensores")
-    
-    
-else:
-    st.write('')
+with col2:
+    if st.button('🔴 Apagar (OFF)'):
+        act1 = "OFF"
+        client1 = paho.Client("GIT-HUB")
+        client1.on_publish = on_publish
+        client1.connect(broker, port)
+        message = json.dumps({"Act1": act1})
+        client1.publish("cmqtt_s", message)
+        st.success("Dispositivo apagado.")
 
-if st.button('OFF'):
-    act1="OFF"
-    client1= paho.Client("GIT-HUB")                           
-    client1.on_publish = on_publish                          
-    client1.connect(broker,port)  
-    message =json.dumps({"Act1":act1})
-    ret= client1.publish("cmqtt_s", message)
-  
-    
-else:
-    st.write('')
+# Sección de control analógico
+st.subheader("🎚️ Control de Valor Analógico")
 
-values = st.slider('Selecciona el rango de valores',0.0, 100.0)
-st.write('Values:', values)
+values = st.slider('Selecciona el valor analógico a enviar', 0.0, 100.0, step=1.0)
+st.write(f'Valor seleccionado: **{values}**')
 
-if st.button('Enviar valor analógico'):
-    client1= paho.Client("GIT-HUB")                           
-    client1.on_publish = on_publish                          
-    client1.connect(broker,port)   
-    message =json.dumps({"Analog": float(values)})
-    ret= client1.publish("cmqtt_a", message)
-    
- 
-else:
-    st.write('')
+if st.button('📤 Enviar valor analógico'):
+    client1 = paho.Client("GIT-HUB")
+    client1.on_publish = on_publish
+    client1.connect(broker, port)
+    message = json.dumps({"Analog": float(values)})
+    client1.publish("cmqtt_a", message)
+    st.success(f"Valor {values} enviado correctamente.")
 
-
+# Footer opcional
+st.markdown("---")
+st.caption("Desarrollado por Cami 💻")
 
 
